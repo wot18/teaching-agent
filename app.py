@@ -22,40 +22,38 @@ from src.config_loader import get_auth_config
 auth_cfg = get_auth_config()
 credentials = auth_cfg.get("credentials", {})
 
-if credentials:
-    import streamlit_authenticator as stauth
+import streamlit_authenticator as stauth
 
-    cookie_cfg = auth_cfg.get("cookie", {})
-    user_dict = {}
-    for _key, val in credentials.items():
-        if isinstance(val, dict):
-            uname = val.get("username", _key)
-            pwd = val.get("password", "")
-        else:
-            uname, pwd = _key, str(val)
-        user_dict[uname] = {"name": uname.capitalize(), "password": stauth.Hasher.hash(pwd)}
+cookie_cfg = auth_cfg.get("cookie", {})
+user_dict = {}
+for _key, val in credentials.items():
+    if isinstance(val, dict):
+        uname = val.get("username", _key)
+        pwd = val.get("password", "")
+    else:
+        uname, pwd = _key, str(val)
+    user_dict[uname] = {"name": uname.capitalize(), "password": stauth.Hasher.hash(pwd)}
 
-    authenticator = stauth.Authenticate(
-        credentials={"usernames": user_dict},
-        cookie_name=cookie_cfg.get("name", "teaching_agent"),
-        cookie_key=cookie_cfg.get("key", "super_secret_key"),
-        cookie_expiry_days=cookie_cfg.get("expiry_days", 7),
-    )
-    authenticator.login("main")
+authenticator = stauth.Authenticate(
+    credentials={"usernames": user_dict},
+    cookie_name=cookie_cfg.get("name", "teaching_agent"),
+    cookie_key=cookie_cfg.get("key", "super_secret_key"),
+    cookie_expiry_days=cookie_cfg.get("expiry_days", 7),
+)
+authenticator.login("main")
 
-    if st.session_state.get("authentication_status") is False:
-        st.error("用户名或密码错误")
-        st.stop()
-    elif st.session_state.get("authentication_status") is None:
+if st.session_state.get("authentication_status") is False:
+    st.error("用户名或密码错误")
+    st.stop()
+elif st.session_state.get("authentication_status") is None:
+    if not credentials:
+        st.warning("未配置登录账号，请在 config.yaml 或 Streamlit Secrets 中设置 auth 配置。")
+    else:
         st.warning("请输入用户名和密码")
-        st.stop()
+    st.stop()
 
-    name = st.session_state.get("name", "")
-    username = st.session_state.get("username", "")
-else:
-    username = "teacher"
-    name = "Teacher"
-    authenticator = None
+name = st.session_state.get("name", "")
+username = st.session_state.get("username", "")
 
 st.sidebar.title("🎓 教学辅助智能体")
 st.sidebar.markdown(f"当前用户: **{name}**")
@@ -67,8 +65,7 @@ page = st.sidebar.radio(
     index=0 if role == "teacher" else 1,
 )
 
-if authenticator:
-    authenticator.logout("退出登录", location="sidebar")
+authenticator.logout("退出登录", location="sidebar")
 
 
 def _session_dir() -> Path:

@@ -115,7 +115,6 @@ def _apply_streamlit_overrides(config: dict[str, Any]) -> None:
             "auth_cookie_key": "auth.cookie.key",
             "auth_cookie_name": "auth.cookie.name",
         }
-        has_auth_override = False
         for secret_key, dotted_path in auth_secrets.items():
             try:
                 value = secrets.get(secret_key)
@@ -123,16 +122,7 @@ def _apply_streamlit_overrides(config: dict[str, Any]) -> None:
                 continue
             if value:
                 _set_nested(config, dotted_path, value)
-                has_auth_override = True
                 logger.debug("Override from streamlit secrets: %s", dotted_path)
-
-        if not has_auth_override and not config.get("auth", {}).get("credentials"):
-            _set_nested(config, "auth.credentials.teacher.username", "teacher")
-            _set_nested(config, "auth.credentials.teacher.password", "teacher123")
-            _set_nested(config, "auth.credentials.judge.username", "judge")
-            _set_nested(config, "auth.credentials.judge.password", "TAC_judge_2026")
-            _set_nested(config, "auth.cookie.key", "super_secret_key")
-            _set_nested(config, "auth.cookie.name", "teaching_agent")
     except Exception as e:
         logger.debug("Streamlit secrets read failed: %s", e)
 
