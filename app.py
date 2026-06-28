@@ -312,8 +312,11 @@ def _render_student_page():
     answers_upload = st.file_uploader("上传标准答案 (.json)", type=["json"], key="answers_upload")
 
     if uploaded and answers_upload:
+        fp = f"{uploaded.name}:{uploaded.size}:{answers_upload.name}:{answers_upload.size}"
+        cache_key = f"grading_result::{fp}"
+
         if st.button("开始批阅", type="primary"):
-            from src.models import ExerciseSet
+            from src.models import ExerciseSet, GradingResult
             from src.llm_client import LLMClient
             from src.grading_agent import GradingAgent
 
@@ -331,28 +334,38 @@ def _render_student_page():
                 with st.spinner("正在批阅...（可能需要3-5分钟）"):
                     result = agent.grade_submission(nb_path, exercise_set)
 
-                st.success(f"批阅完成！总分：{result.total_score:.1f} / {result.total_max:.1f}")
-
-                score_pct = result.total_score / max(result.total_max, 1) * 100
-                st.progress(int(score_pct))
-                st.markdown(f"### 📊 总分：{result.total_score:.1f} / {result.total_max:.1f} ({score_pct:.0f}%)")
-
-                for qg in result.question_grades:
-                    q_num = qg.question_id.replace("q", "")
-                    with st.expander(f"第 {q_num} 题（得分：{qg.total_score:.1f}/{qg.total_max:.1f}）"):
-                        st.markdown(qg.feedback)
-
-                report_md = _generate_student_report(result)
-                st.download_button(
-                    "📥 下载批改报告 (Markdown)",
-                    data=report_md,
-                    file_name="批改报告.md",
-                    mime="text/markdown",
-                )
+                st.session_state[cache_key] = result.model_dump()
             except Exception as e:
                 st.error(f"批阅失败：{e}")
             finally:
                 Path(nb_path).unlink(missing_ok=True)
+
+        if cache_key in st.session_state:
+            from src.models import GradingResult
+            result = GradingResult.model_validate(st.session_state[cache_key])
+
+            st.success(f"批阅完成！总分：{result.total_score:.1f} / {result.total_max:.1f}")
+
+            score_pct = result.total_score / max(result.total_max, 1) * 100
+            st.progress(int(score_pct))
+            st.markdown(f"### 📊 总分：{result.total_score:.1f} / {result.total_max:.1f} ({score_pct:.0f}%)")
+
+            for qg in result.question_grades:
+                q_num = qg.question_id.replace("q", "")
+                with st.expander(f"第 {q_num} 题（得分：{qg.total_score:.1f}/{qg.total_max:.1f}）"):
+                    st.markdown(qg.feedback)
+
+            report_md = _generate_student_report(result)
+            st.download_button(
+                "📥 下载批改报告 (Markdown)",
+                data=report_md,
+                file_name="批改报告.md",
+                mime="text/markdown",
+            )
+
+            if st.button("🔄 清除批阅结果", key=f"clear_{cache_key}"):
+                st.session_state.pop(cache_key, None)
+                st.rerun()
 
 
 def _generate_student_report(result):
