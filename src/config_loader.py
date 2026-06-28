@@ -30,6 +30,14 @@ _LLM_STREAMLIT_MAP: dict[str, tuple[str, str]] = {
 }
 
 
+def _set_nested(config: dict, dotted_key: str, value: str) -> None:
+    keys = dotted_key.split(".")
+    d = config
+    for k in keys[:-1]:
+        d = d.setdefault(k, {})
+    d[keys[-1]] = value
+
+
 def load_config() -> dict[str, Any]:
     """Load configuration with fallback chain.
 
@@ -98,6 +106,33 @@ def _apply_streamlit_overrides(config: dict[str, Any]) -> None:
             if value:
                 config.setdefault(section, {})[field] = value
                 logger.debug("Override from streamlit secrets: %s.%s", section, field)
+
+        auth_secrets = {
+            "auth_teacher_password": "auth.credentials.teacher.password",
+            "auth_teacher_username": "auth.credentials.teacher.username",
+            "auth_judge_password": "auth.credentials.judge.password",
+            "auth_judge_username": "auth.credentials.judge.username",
+            "auth_cookie_key": "auth.cookie.key",
+            "auth_cookie_name": "auth.cookie.name",
+        }
+        has_auth_override = False
+        for secret_key, dotted_path in auth_secrets.items():
+            try:
+                value = secrets.get(secret_key)
+            except Exception:
+                continue
+            if value:
+                _set_nested(config, dotted_path, value)
+                has_auth_override = True
+                logger.debug("Override from streamlit secrets: %s", dotted_path)
+
+        if not has_auth_override and not config.get("auth", {}).get("credentials"):
+            _set_nested(config, "auth.credentials.teacher.username", "teacher")
+            _set_nested(config, "auth.credentials.teacher.password", "teacher123")
+            _set_nested(config, "auth.credentials.judge.username", "judge")
+            _set_nested(config, "auth.credentials.judge.password", "TAC_judge_2026")
+            _set_nested(config, "auth.cookie.key", "super_secret_key")
+            _set_nested(config, "auth.cookie.name", "teaching_agent")
     except Exception as e:
         logger.debug("Streamlit secrets read failed: %s", e)
 
