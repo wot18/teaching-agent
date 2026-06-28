@@ -1,0 +1,30 @@
+# Teaching Agent Configuration
+# Copy this file to config.yaml and fill in your API credentials
+
+llm:
+  base_url: "https://api.minimaxi.com/v1"
+  api_key: "YOUR_API_KEY_HERE"
+  model_name: "MiniMax-M3"
+  temperature: 0.3
+  max_tokens: 8192
+  max_retries: 3
+  retry_delay: 2  # seconds between retries
+
+app:
+  course_name: "人工智能基础"
+  university: "河北工业大学"
+  department: "人工智能学院"
+  max_questions: 10
+
+auth:
+  credentials:
+    teacher:
+      username: "teacher"
+      password: "teacher123"
+    judge:
+      username: "judge"
+      password: "TAC_judge_2026"
+  cookie:
+    name: "teaching_agent"
+    key: "a1b2c3d4e5f6g7h8i9j0"
+    expiry_days: 7

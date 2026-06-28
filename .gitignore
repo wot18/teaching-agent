@@ -1,0 +1,36 @@
+# Config with secrets
+config/config.yaml
+
+
+# Runtime data
+data/sessions/*
+data/uploads/*
+!data/sessions/.gitkeep
+!data/uploads/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+t-agent-venv/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+
+PROJECT_CONTEXT.md
